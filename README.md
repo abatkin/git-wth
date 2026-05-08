@@ -3,8 +3,17 @@
 `git-wth` is Git What The Heck: a Go rewrite of `git-wtf`.
 
 It displays the state of a Git repository in a readable, easy-to-scan format.
-Use it to see how a branch relates to its remote, how feature branches relate to
-integration branches, and how integration branches relate to feature branches.
+It's useful for getting a summary of how a branch relates to a remote, and for
+wrangling many topic branches.
+
+git-wth can show you:
+- How a branch relates to the remote repo, if it's a tracking branch.
+- How a branch relates to integration branches, if it's a feature branch.
+- How a branch relates to the feature branches, if it's an integration
+  branch.
+
+git-wth is best used before a git push, or between a git fetch and a git
+merge. Be sure to set color.ui to auto or yes for maximum viewing pleasure.
 
 ## Usage
 

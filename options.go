@@ -41,7 +41,7 @@ func parseOptions(args []string) (Options, error) {
 			opts.ShowRelations = true
 		default:
 			if strings.HasPrefix(arg, "--") {
-				return opts, fmt.Errorf("Error: unknown argument %s.", arg)
+				return opts, fmt.Errorf("Error: unknown argument %s", arg)
 			}
 			opts.Branches = append(opts.Branches, arg)
 		}

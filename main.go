@@ -16,13 +16,11 @@ import (
 var textFS embed.FS
 
 var (
-	help  string
 	key   string
 	usage string
 )
 
 func init() {
-	help = loadText("text/help.txt")
 	key = loadText("text/key.txt")
 	usage = loadText("text/usage.txt")
 }
@@ -54,7 +52,7 @@ type App struct {
 
 func main() {
 	if err := run(os.Args[1:], git.Cli{}); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
@@ -100,7 +98,7 @@ func run(args []string, g git.Git) error {
 		name := strings.TrimPrefix(target, "heads/")
 		branch := branches[name]
 		if branch == nil {
-			return fmt.Errorf("Error: can't find branch %q.", name)
+			return fmt.Errorf("Error: can't find branch %q", name)
 		}
 		targets = append(targets, branch)
 	}
@@ -462,24 +460,24 @@ func (a *App) showCommits(commits []string, prefix string) {
 		fmt.Println(prefix + " none")
 		return
 	}
-	max := a.config.MaxCommits
+	maxCommits := a.config.MaxCommits
 	if a.opts.AllCommits {
-		max = len(commits)
+		maxCommits = len(commits)
 	}
-	if max == len(commits)-1 {
-		max--
+	if maxCommits == len(commits)-1 {
+		maxCommits--
 	}
-	if max < 0 {
-		max = 0
+	if maxCommits < 0 {
+		maxCommits = 0
 	}
-	if max > len(commits) {
-		max = len(commits)
+	if maxCommits > len(commits) {
+		maxCommits = len(commits)
 	}
-	for _, commit := range commits[:max] {
+	for _, commit := range commits[:maxCommits] {
 		fmt.Println(prefix + commit)
 	}
-	if len(commits) > max {
-		fmt.Println(a.ui.Grey(fmt.Sprintf("%s... and %d more (use -A to see all).", prefix, len(commits)-max)))
+	if len(commits) > maxCommits {
+		fmt.Println(a.ui.Grey(fmt.Sprintf("%s... and %d more (use -A to see all).", prefix, len(commits)-maxCommits)))
 	}
 }
 
