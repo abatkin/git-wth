@@ -14,7 +14,7 @@ If [branch] is not specified, git-wth will use the current branch. The possible
 
 git-wth uses some heuristics to determine which branches are integration
 branches, and which are feature branches. (Specifically, it assumes the
-integration branches are named "master", "next" and "edge".) If it guesses
+integration branches are named "main", "master", "next" and "edge".) If it guesses
 incorrectly, you will have to create a .git-wthrc file.
 
 To start building a configuration file, run "git wth --dump-config >
@@ -26,5 +26,5 @@ starting in the current directory, and recursively up to the root. If no
 for compatibility with git-wtf.
 
 IMPORTANT NOTE: all local branches referenced in config files must be prefixed
-with heads/, e.g. "heads/master". Remote branches must be of the form
+with heads/, e.g. "heads/main". Remote branches must be of the form
 remotes/<remote>/<branch>.

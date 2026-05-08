@@ -25,7 +25,7 @@ type Config struct {
 
 func defaultConfig() Config {
 	return Config{
-		IntegrationBranches: []string{"heads/master", "heads/next", "heads/edge"},
+		IntegrationBranches: []string{"heads/main", "heads/master", "heads/next", "heads/edge"},
 		Ignore:              []string{},
 		MaxCommits:          5,
 	}

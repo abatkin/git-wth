@@ -44,7 +44,7 @@ The config file is a small YAML file with these keys:
 - `max_commits`: number of commits to display when `--all-commits` is not used
 
 Local branches referenced in config files must be prefixed with `heads/`, for
-example `heads/master`. Remote branches must use `remotes/<remote>/<branch>`.
+example `heads/main`. Remote branches must use `remotes/<remote>/<branch>`.
 
 `versions` is also accepted as a legacy alias for `integration-branches`.
 
