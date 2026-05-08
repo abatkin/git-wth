@@ -57,6 +57,17 @@ example `heads/main`. Remote branches must use `remotes/<remote>/<branch>`.
 
 `versions` is also accepted as a legacy alias for `integration-branches`.
 
+## History and Licensing
+
+git-wth is a Go port of `git-wtf`, originally written in Ruby by
+William Morgan (2008–2009). This project continues under the original
+GPL-3.0-or-later license.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
 ## Compatibility With git-wtf
 
 This project aims to be usable as a drop-in replacement for `git-wtf` where
