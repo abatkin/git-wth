@@ -1,0 +1,12 @@
+KEY:
+() branch only exists locally
+{} branch only exists on a remote repo
+[] branch exists locally and remotely
+
+x merge occurs both locally and remotely
+~ merge occurs only locally
+  (space) branch isn't merged in
+
+(It's possible for merges to occur remotely and not locally, of course, but
+that's a less common case and git-wth currently doesn't display anything
+special for it.)

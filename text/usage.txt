@@ -1,0 +1,30 @@
+Usage: git wth [branch+] [options]
+
+If [branch] is not specified, git-wth will use the current branch. The possible
+[options] are:
+
+  -l, --long          include author info and date for each commit
+  -a, --all           show all branches across all remote repos, not just
+                      those from origin
+  -A, --all-commits   show all commits, not just the first 5
+  -s, --short         don't show commits
+  -k, --key           show key
+  -r, --relations     show relation to features / integration branches
+      --dump-config   print out current configuration and exit
+
+git-wth uses some heuristics to determine which branches are integration
+branches, and which are feature branches. (Specifically, it assumes the
+integration branches are named "master", "next" and "edge".) If it guesses
+incorrectly, you will have to create a .git-wthrc file.
+
+To start building a configuration file, run "git wth --dump-config >
+.git-wthrc" and edit it. The config file is a YAML file that specifies the
+integration branches, any branches to ignore, and the max number of commits to
+display when --all-commits isn't used. git-wth will look for a .git-wthrc file
+starting in the current directory, and recursively up to the root. If no
+.git-wthrc file is found, git-wth will also look for the legacy .git-wtfrc name
+for compatibility with git-wtf.
+
+IMPORTANT NOTE: all local branches referenced in config files must be prefixed
+with heads/, e.g. "heads/master". Remote branches must be of the form
+remotes/<remote>/<branch>.
