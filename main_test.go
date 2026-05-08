@@ -106,6 +106,71 @@ func TestLoadConfigFallsBackToLegacyWtfConfigFile(t *testing.T) {
 	}
 }
 
+func TestLoadConfigNormalizesRemoteBranchNames(t *testing.T) {
+	dir := t.TempDir()
+	oldWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd returned error: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWd); err != nil {
+			t.Fatalf("Chdir cleanup returned error: %v", err)
+		}
+	})
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("Chdir returned error: %v", err)
+	}
+
+	configData := `integration-branches:
+- heads/main
+- remotes/upstream/main
+- origin/stable
+ignore: [remotes/origin/topic, heads/tmp, origin/wip]
+`
+	if err := os.WriteFile(filepath.Join(dir, configFileName), []byte(configData), 0o644); err != nil {
+		t.Fatalf("WriteFile config returned error: %v", err)
+	}
+
+	config, err := loadConfig()
+	if err != nil {
+		t.Fatalf("loadConfig returned error: %v", err)
+	}
+	if got, want := config.IntegrationBranches, []string{"heads/main", "upstream/main", "origin/stable"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("IntegrationBranches = %v, want %v", got, want)
+	}
+	if got, want := config.Ignore, []string{"origin/topic", "heads/tmp", "origin/wip"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("Ignore = %v, want %v", got, want)
+	}
+}
+
+func TestLoadConfigNormalizesLegacyVersionsBranchNames(t *testing.T) {
+	dir := t.TempDir()
+	oldWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd returned error: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWd); err != nil {
+			t.Fatalf("Chdir cleanup returned error: %v", err)
+		}
+	})
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("Chdir returned error: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, configFileName), []byte("versions: [remotes/upstream/main]\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile config returned error: %v", err)
+	}
+
+	config, err := loadConfig()
+	if err != nil {
+		t.Fatalf("loadConfig returned error: %v", err)
+	}
+	if got, want := config.IntegrationBranches, []string{"upstream/main"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("IntegrationBranches = %v, want %v", got, want)
+	}
+}
+
 func TestAheadBehindString(t *testing.T) {
 	got := aheadBehindString([]string{"a", "b"}, []string{"c"})
 	want := "2 commits ahead; 1 commit behind"

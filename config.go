@@ -44,17 +44,29 @@ func loadConfig() (Config, error) {
 	}
 	parsed := parseSimpleYAML(string(data))
 	if integration := parsed.stringList("integration-branches"); integration != nil {
-		config.IntegrationBranches = integration
+		config.IntegrationBranches = normalizeConfigBranchNames(integration)
 	} else if versions := parsed.stringList("versions"); versions != nil {
-		config.IntegrationBranches = versions
+		config.IntegrationBranches = normalizeConfigBranchNames(versions)
 	}
 	if ignore := parsed.stringList("ignore"); ignore != nil {
-		config.Ignore = ignore
+		config.Ignore = normalizeConfigBranchNames(ignore)
 	}
 	if maxCommits, ok := parsed.intValue("max_commits"); ok {
 		config.MaxCommits = maxCommits
 	}
 	return config, nil
+}
+
+func normalizeConfigBranchNames(branches []string) []string {
+	normalized := make([]string, 0, len(branches))
+	for _, branch := range branches {
+		normalized = append(normalized, normalizeConfigBranchName(branch))
+	}
+	return normalized
+}
+
+func normalizeConfigBranchName(branch string) string {
+	return strings.TrimPrefix(branch, "remotes/")
 }
 
 func findConfigFile() (string, error) {
