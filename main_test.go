@@ -282,6 +282,39 @@ func TestShowRelationsIntegrationLocalAndRemoteFeatureBehindUsesRemote(t *testin
 	}
 }
 
+func TestShowRelationsIntegrationFeatureBranchesAreSortedByName(t *testing.T) {
+	app := &App{
+		git: fakeGit{
+			logs: map[string][]string{
+				"heads/main..heads/alpha": {"alpha ahead"},
+				"heads/main..heads/beta":  {"beta ahead"},
+				"heads/main..heads/zeta":  {"zeta ahead"},
+			},
+		},
+		opts: Options{Short: true},
+		config: Config{
+			IntegrationBranches: []string{"heads/main"},
+		},
+	}
+	main := &Branch{Name: "main", LocalBranch: "heads/main"}
+	alpha := &Branch{Name: "alpha", LocalBranch: "heads/alpha"}
+	beta := &Branch{Name: "beta", LocalBranch: "heads/beta"}
+	zeta := &Branch{Name: "zeta", LocalBranch: "heads/zeta"}
+
+	output := captureStdout(t, func() {
+		if err := app.showRelations(main, map[string]*Branch{
+			"zeta":  zeta,
+			"main":  main,
+			"beta":  beta,
+			"alpha": alpha,
+		}); err != nil {
+			t.Fatalf("showRelations returned error: %v", err)
+		}
+	})
+
+	assertSubstringsInOrder(t, output, " alpha ", " beta ", " zeta ")
+}
+
 func TestWantColorPrefersWthConfig(t *testing.T) {
 	app := &App{git: fakeGit{config: map[string]string{
 		colorConfigKey:       "false",
@@ -373,4 +406,19 @@ func containsString(values []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func assertSubstringsInOrder(t *testing.T, s string, substrings ...string) {
+	t.Helper()
+	previous := -1
+	for _, substring := range substrings {
+		index := strings.Index(s, substring)
+		if index == -1 {
+			t.Fatalf("output missing %q:\n%s", substring, s)
+		}
+		if index <= previous {
+			t.Fatalf("output has %q out of order:\n%s", substring, s)
+		}
+		previous = index
+	}
 }

@@ -331,6 +331,8 @@ func (a *App) showRelations(b *Branch, allBranches map[string]*Branch) error {
 			fbs = append(fbs, branch)
 		}
 	}
+	sortBranchesByName(ibs)
+	sortBranchesByName(fbs)
 
 	if a.isIntegrationBranch(b.LocalBranch) {
 		if len(fbs) > 0 {
@@ -404,7 +406,6 @@ func (a *App) showRelations(b *Branch, allBranches map[string]*Branch) error {
 			fmt.Println()
 			fmt.Println("Integration branches:")
 		}
-		sortBranchesByName(ibs)
 		for _, br := range ibs {
 			if a.shouldIgnore(br) {
 				continue
