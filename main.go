@@ -381,9 +381,13 @@ func (a *App) showRelations(b *Branch, allBranches map[string]*Branch) error {
 			} else if len(localAhead) == 0 {
 				fmt.Printf("%s %s merged in (only locally)\n", a.widget(true, remoteOnly, localOnly, true), name)
 			} else {
-				behind, err := a.commitsBetween(head, util.FirstNonEmpty(br.LocalBranch, br.RemoteBranch))
-				if err != nil {
-					return err
+				var behind []string
+				if br.LocalBranch != "" && br.RemoteBranch != "" {
+					var err error
+					behind, err = a.commitsBetween(br.LocalBranch, br.RemoteBranch)
+					if err != nil {
+						return err
+					}
 				}
 				ahead := localAhead
 				if remoteOnly {

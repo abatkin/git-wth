@@ -2,9 +2,11 @@ package main
 
 import (
 	"git-wth/git"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -179,6 +181,107 @@ func TestAheadBehindString(t *testing.T) {
 	}
 }
 
+func TestShowRelationsIntegrationLocalOnlyFeatureHasNoBehindCount(t *testing.T) {
+	logCalls := []string{}
+	app := &App{
+		git: fakeGit{
+			logs: map[string][]string{
+				"heads/main..heads/topic": {"topic ahead"},
+			},
+			logCalls: &logCalls,
+		},
+		opts: Options{Short: true},
+		config: Config{
+			IntegrationBranches: []string{"heads/main"},
+		},
+	}
+	main := &Branch{Name: "main", LocalBranch: "heads/main"}
+	topic := &Branch{Name: "topic", LocalBranch: "heads/topic"}
+
+	output := captureStdout(t, func() {
+		if err := app.showRelations(main, map[string]*Branch{"main": main, "topic": topic}); err != nil {
+			t.Fatalf("showRelations returned error: %v", err)
+		}
+	})
+
+	if containsString(logCalls, "heads/topic..heads/topic") {
+		t.Fatalf("Log calls included self-comparison: %v", logCalls)
+	}
+	if strings.Contains(output, "behind") {
+		t.Fatalf("output contains behind count, want none:\n%s", output)
+	}
+}
+
+func TestShowRelationsIntegrationRemoteOnlyFeatureUsesRemoteAheadCommits(t *testing.T) {
+	logCalls := []string{}
+	app := &App{
+		git: fakeGit{
+			logs: map[string][]string{
+				"origin/main..origin/topic": {"remote ahead 1", "remote ahead 2"},
+				"heads/main..origin/topic":  {"local ahead"},
+			},
+			logCalls: &logCalls,
+		},
+		opts: Options{Short: true},
+		config: Config{
+			IntegrationBranches: []string{"heads/main"},
+		},
+	}
+	main := &Branch{Name: "main", LocalBranch: "heads/main", RemoteBranch: "origin/main"}
+	topic := &Branch{Name: "topic", RemoteBranch: "origin/topic"}
+
+	output := captureStdout(t, func() {
+		if err := app.showRelations(main, map[string]*Branch{"main": main, "topic": topic}); err != nil {
+			t.Fatalf("showRelations returned error: %v", err)
+		}
+	})
+
+	if containsString(logCalls, "origin/topic..origin/topic") {
+		t.Fatalf("Log calls included self-comparison: %v", logCalls)
+	}
+	if !strings.Contains(output, "2 commits ahead") {
+		t.Fatalf("output = %q, want remote-ahead count", output)
+	}
+	if strings.Contains(output, "behind") {
+		t.Fatalf("output contains behind count, want none:\n%s", output)
+	}
+}
+
+func TestShowRelationsIntegrationLocalAndRemoteFeatureBehindUsesRemote(t *testing.T) {
+	logCalls := []string{}
+	app := &App{
+		git: fakeGit{
+			logs: map[string][]string{
+				"heads/main..heads/topic":   {"topic ahead"},
+				"heads/topic..origin/topic": {"topic behind"},
+			},
+			logCalls: &logCalls,
+		},
+		opts: Options{Short: true},
+		config: Config{
+			IntegrationBranches: []string{"heads/main"},
+		},
+	}
+	main := &Branch{Name: "main", LocalBranch: "heads/main"}
+	topic := &Branch{Name: "topic", LocalBranch: "heads/topic", RemoteBranch: "origin/topic"}
+
+	output := captureStdout(t, func() {
+		if err := app.showRelations(main, map[string]*Branch{"main": main, "topic": topic}); err != nil {
+			t.Fatalf("showRelations returned error: %v", err)
+		}
+	})
+
+	if !containsString(logCalls, "heads/topic..origin/topic") {
+		t.Fatalf("Log calls = %v, want heads/topic..origin/topic", logCalls)
+	}
+	if containsString(logCalls, "heads/topic..heads/topic") {
+		t.Fatalf("Log calls included self-comparison: %v", logCalls)
+	}
+	if !strings.Contains(output, "1 commit behind") {
+		t.Fatalf("output = %q, want behind count", output)
+	}
+}
+
 func TestWantColorPrefersWthConfig(t *testing.T) {
 	app := &App{git: fakeGit{config: map[string]string{
 		colorConfigKey:       "false",
@@ -199,7 +302,9 @@ func TestWantColorFallsBackToLegacyWtfConfig(t *testing.T) {
 }
 
 type fakeGit struct {
-	config map[string]string
+	config   map[string]string
+	logs     map[string][]string
+	logCalls *[]string
 }
 
 func (f fakeGit) Config(key string) (string, error) {
@@ -211,7 +316,10 @@ func (f fakeGit) ConfigRegexp(pattern string) ([]string, error) {
 }
 
 func (f fakeGit) Log(format string, revisionRange string) ([]string, error) {
-	return nil, nil
+	if f.logCalls != nil {
+		*f.logCalls = append(*f.logCalls, revisionRange)
+	}
+	return f.logs[revisionRange], nil
 }
 
 func (f fakeGit) ShowRef() ([]git.Ref, error) {
@@ -228,4 +336,41 @@ func (f fakeGit) HasModifiedFiles() (bool, error) {
 
 func (f fakeGit) HasStagedChanges() (bool, error) {
 	return false, nil
+}
+
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	oldStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("Pipe returned error: %v", err)
+	}
+	os.Stdout = w
+	t.Cleanup(func() {
+		os.Stdout = oldStdout
+	})
+
+	fn()
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close writer returned error: %v", err)
+	}
+	os.Stdout = oldStdout
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatalf("ReadAll returned error: %v", err)
+	}
+	if err := r.Close(); err != nil {
+		t.Fatalf("Close reader returned error: %v", err)
+	}
+	return string(out)
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
