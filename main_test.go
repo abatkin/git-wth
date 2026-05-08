@@ -29,23 +29,28 @@ func TestParseOptionsUnknownLongFlag(t *testing.T) {
 	}
 }
 
-func TestParseSimpleYAML(t *testing.T) {
-	parsed := parseSimpleYAML(`---
+func TestParseConfigYAML(t *testing.T) {
+	parsed, err := parseConfigYAML([]byte(`---
+defaults: &ignored
+- heads/tmp
 integration-branches:
-- heads/main
+- "heads/main"
 - heads/release
-ignore: [heads/tmp, "origin/wip"]
+ignore: *ignored
 max_commits: 12
-`)
+`))
+	if err != nil {
+		t.Fatalf("parseConfigYAML returned error: %v", err)
+	}
 
-	if got, want := parsed.stringList("integration-branches"), []string{"heads/main", "heads/release"}; !reflect.DeepEqual(got, want) {
+	if got, want := []string(*parsed.IntegrationBranches), []string{"heads/main", "heads/release"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("integration branches = %v, want %v", got, want)
 	}
-	if got, want := parsed.stringList("ignore"), []string{"heads/tmp", "origin/wip"}; !reflect.DeepEqual(got, want) {
+	if got, want := []string(*parsed.Ignore), []string{"heads/tmp"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("ignore = %v, want %v", got, want)
 	}
-	if got, ok := parsed.intValue("max_commits"); !ok || got != 12 {
-		t.Fatalf("max_commits = %d, %v; want 12, true", got, ok)
+	if parsed.MaxCommits == nil || *parsed.MaxCommits != 12 {
+		t.Fatalf("max_commits = %v; want 12", parsed.MaxCommits)
 	}
 }
 

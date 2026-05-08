@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
+
+	"go.yaml.in/yaml/v4"
 )
 
 const (
@@ -22,6 +23,15 @@ type Config struct {
 	Ignore              []string
 	MaxCommits          int
 }
+
+type configYAML struct {
+	IntegrationBranches *branchList `yaml:"integration-branches"`
+	Versions            *branchList `yaml:"versions"`
+	Ignore              *branchList `yaml:"ignore"`
+	MaxCommits          *int        `yaml:"max_commits"`
+}
+
+type branchList []string
 
 func defaultConfig() Config {
 	return Config{
@@ -42,17 +52,20 @@ func loadConfig() (Config, error) {
 	if err != nil {
 		return config, err
 	}
-	parsed := parseSimpleYAML(string(data))
-	if integration := parsed.stringList("integration-branches"); integration != nil {
-		config.IntegrationBranches = normalizeConfigBranchNames(integration)
-	} else if versions := parsed.stringList("versions"); versions != nil {
-		config.IntegrationBranches = normalizeConfigBranchNames(versions)
+	parsed, err := parseConfigYAML(data)
+	if err != nil {
+		return config, err
 	}
-	if ignore := parsed.stringList("ignore"); ignore != nil {
-		config.Ignore = normalizeConfigBranchNames(ignore)
+	if parsed.IntegrationBranches != nil {
+		config.IntegrationBranches = normalizeConfigBranchNames(*parsed.IntegrationBranches)
+	} else if parsed.Versions != nil {
+		config.IntegrationBranches = normalizeConfigBranchNames(*parsed.Versions)
 	}
-	if maxCommits, ok := parsed.intValue("max_commits"); ok {
-		config.MaxCommits = maxCommits
+	if parsed.Ignore != nil {
+		config.Ignore = normalizeConfigBranchNames(*parsed.Ignore)
+	}
+	if parsed.MaxCommits != nil {
+		config.MaxCommits = *parsed.MaxCommits
 	}
 	return config, nil
 }
@@ -97,103 +110,29 @@ func findFile(name string) (string, error) {
 	}
 }
 
-type simpleYAML map[string]any
-
-func parseSimpleYAML(input string) simpleYAML {
-	result := simpleYAML{}
-	currentKey := ""
-	for _, raw := range strings.Split(input, "\n") {
-		line := stripYAMLComment(strings.TrimSpace(raw))
-		if line == "" || line == "---" {
-			continue
-		}
-		if strings.HasPrefix(line, "- ") {
-			if currentKey != "" {
-				result[currentKey] = append(result.stringList(currentKey), unquoteYAML(strings.TrimSpace(strings.TrimPrefix(line, "- "))))
-			}
-			continue
-		}
-		key, value, ok := strings.Cut(line, ":")
-		if !ok {
-			continue
-		}
-		currentKey = strings.TrimSpace(key)
-		value = strings.TrimSpace(value)
-		switch {
-		case value == "":
-			result[currentKey] = []string{}
-		case strings.HasPrefix(value, "[") && strings.HasSuffix(value, "]"):
-			result[currentKey] = parseInlineYAMLList(value)
-		case isInt(value):
-			n, _ := strconv.Atoi(value)
-			result[currentKey] = n
-		default:
-			result[currentKey] = unquoteYAML(value)
-		}
+func parseConfigYAML(data []byte) (configYAML, error) {
+	var parsed configYAML
+	if err := yaml.Unmarshal(data, &parsed); err != nil {
+		return configYAML{}, err
 	}
-	return result
+	return parsed, nil
 }
 
-func stripYAMLComment(line string) string {
-	if strings.HasPrefix(line, "#") {
-		return ""
-	}
-	return line
-}
-
-func parseInlineYAMLList(value string) []string {
-	value = strings.TrimSuffix(strings.TrimPrefix(value, "["), "]")
-	if strings.TrimSpace(value) == "" {
-		return []string{}
-	}
-	parts := strings.Split(value, ",")
-	out := make([]string, 0, len(parts))
-	for _, part := range parts {
-		out = append(out, unquoteYAML(strings.TrimSpace(part)))
-	}
-	return out
-}
-
-func unquoteYAML(value string) string {
-	value = strings.TrimSpace(value)
-	if len(value) >= 2 {
-		if (value[0] == '"' && value[len(value)-1] == '"') || (value[0] == '\'' && value[len(value)-1] == '\'') {
-			return value[1 : len(value)-1]
+func (l *branchList) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind == yaml.ScalarNode {
+		if value.Tag == "!!null" || value.Value == "" {
+			*l = branchList{}
+			return nil
 		}
-	}
-	return value
-}
-
-func isInt(value string) bool {
-	_, err := strconv.Atoi(value)
-	return err == nil
-}
-
-func (y simpleYAML) stringList(key string) []string {
-	value, ok := y[key]
-	if !ok {
+		*l = branchList{value.Value}
 		return nil
 	}
-	switch v := value.(type) {
-	case []string:
-		return v
-	case string:
-		if v == "" {
-			return []string{}
-		}
-		return []string{v}
-	default:
-		return nil
+	var branches []string
+	if err := value.Decode(&branches); err != nil {
+		return err
 	}
-}
-
-func (y simpleYAML) intValue(key string) (int, bool) {
-	value, ok := y[key]
-	if !ok {
-		return 0, false
-	}
-	n, ok := value.(int)
-	return n, ok
+	*l = branches
+	return nil
 }
 
 func (c Config) toYAML() string {
