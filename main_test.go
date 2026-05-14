@@ -1,7 +1,7 @@
 package main
 
 import (
-	"git-wth/git"
+	"github.com/abatkin/git-wth/git"
 	"io"
 	"os"
 	"path/filepath"
