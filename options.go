@@ -14,6 +14,7 @@ type Options struct {
 	DumpConfig    bool
 	Key           bool
 	ShowRelations bool
+	Version       bool
 	Branches      []string
 }
 
@@ -22,9 +23,7 @@ func parseOptions(args []string) (Options, error) {
 	for _, arg := range args {
 		switch arg {
 		case "--help", "-h":
-			fmt.Println(usage)
 			opts.Help = true
-			return opts, nil
 		case "--long", "-l":
 			opts.Long = true
 		case "--short", "-s":
@@ -39,6 +38,8 @@ func parseOptions(args []string) (Options, error) {
 			opts.Key = true
 		case "--relations", "-r":
 			opts.ShowRelations = true
+		case "--version":
+			opts.Version = true
 		default:
 			if strings.HasPrefix(arg, "--") {
 				return opts, fmt.Errorf("Error: unknown argument %s", arg)

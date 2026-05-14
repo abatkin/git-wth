@@ -81,6 +81,19 @@ Backwards-incompatible behavior changes, command-line differences, config key
 changes, and other functionality differences from `git-wtf` should be
 documented in this README.
 
+## Building
+
+To build `git-wth` with custom version information:
+
+```sh
+go build -ldflags="-X main.Version=1.0.0 -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o git-wth .
+```
+
+- `Version`: The version string to display.
+- `BuildTime`: The build timestamp (RFC3339 format recommended).
+
+If these are not provided, `git-wth` will attempt to use information from the Go build system (VCS revision and time).
+
 ## Development
 
 Run the test suite:

@@ -10,6 +10,7 @@ If [branch] is not specified, git-wth will use the current branch. The possible
   -s, --short         don't show commits
   -k, --key           show key
   -r, --relations     show relation to features / integration branches
+      --version       show version
       --dump-config   print out current configuration and exit
 
 git-wth uses some heuristics to determine which branches are integration

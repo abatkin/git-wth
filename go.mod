@@ -1,4 +1,4 @@
-module git-wth
+module github.com/abatkin/git-wth
 
 go 1.26
 

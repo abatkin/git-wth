@@ -20,13 +20,14 @@ package main
 import (
 	"embed"
 	"fmt"
-	"git-wth/ui"
-	"git-wth/util"
 	"os"
 	"slices"
 	"strings"
 
-	"git-wth/git"
+	"github.com/abatkin/git-wth/ui"
+	"github.com/abatkin/git-wth/util"
+
+	"github.com/abatkin/git-wth/git"
 )
 
 //go:embed text/*.txt
@@ -80,6 +81,11 @@ func run(args []string, g git.Git) error {
 		return err
 	}
 	if opts.Help {
+		fmt.Println(usage)
+		return nil
+	}
+	if opts.Version {
+		fmt.Println(getVersion())
 		return nil
 	}
 
