@@ -1,0 +1,100 @@
+version: '3'
+
+# Taskfile for git-wth.
+#
+# Install go-task: https://taskfile.dev/installation/
+# Run `task --list` to see available tasks.
+
+vars:
+  BINARY: git-wth
+
+tasks:
+  default:
+    desc: Format, vet, test, and build
+    deps: [fmt, vet]
+    cmds:
+      - task: test
+      - task: build
+
+  build:
+    desc: Build the CLI binary
+    cmds:
+      - go build -o {{.BINARY}} .
+    sources:
+      - "**/*.go"
+      - "text/*.txt"
+      - go.mod
+      - go.sum
+    generates:
+      - "{{.BINARY}}"
+
+  build:version:
+    desc: Build with version info injected via -ldflags (uses `git describe`)
+    vars:
+      VERSION:
+        sh: git describe --tags --always --dirty 2>/dev/null || echo dev
+      BUILD_TIME:
+        sh: date -u +%Y-%m-%dT%H:%M:%SZ
+    cmds:
+      - >-
+        go build
+        -ldflags="-X main.Version={{.VERSION}} -X main.BuildTime={{.BUILD_TIME}}"
+        -o {{.BINARY}} .
+      - echo "Built {{.BINARY}} version {{.VERSION}} ({{.BUILD_TIME}})"
+
+  test:
+    desc: Run the test suite
+    cmds:
+      - go test ./...
+
+  test:cover:
+    desc: Run the test suite with coverage reporting
+    cmds:
+      - go test ./... -cover
+
+  fmt:
+    desc: Format Go source files with gofmt
+    cmds:
+      - gofmt -w .
+
+  vet:
+    desc: Run `go vet` over all packages
+    cmds:
+      - go vet ./...
+
+  help:
+    desc: Build and show CLI help output
+    deps: [build]
+    cmds:
+      - ./{{.BINARY}} --help
+
+  clean:
+    desc: Remove built artifacts
+    cmds:
+      - rm -f {{.BINARY}}
+
+  release:
+    desc: 'Tag and build a release. Usage: task release VERSION=v1.2.3 [SKIP_TESTS=true]'
+    vars:
+      SKIP_TESTS: '{{.SKIP_TESTS | default "false"}}'
+    preconditions:
+      - sh: '[ -n "{{.VERSION}}" ]'
+        msg: 'VERSION is required. Usage: task release VERSION=v1.2.3'
+      - sh: 'printf %s "{{.VERSION}}" | grep -Eq "^v[0-9]+\.[0-9]+\.[0-9]+$"'
+        msg: 'VERSION must match vX.Y.Z (got "{{.VERSION}}")'
+      - sh: '! git rev-parse -q --verify "refs/tags/{{.VERSION}}" >/dev/null'
+        msg: 'Tag {{.VERSION}} already exists'
+      - sh: 'git diff --quiet && git diff --cached --quiet && [ -z "$(git status --porcelain)" ]'
+        msg: 'Working tree is dirty; commit or stash changes before releasing'
+    cmds:
+      - cmd: |
+          if [ "{{.SKIP_TESTS}}" != "true" ]; then
+            go test ./...
+          else
+            echo "Skipping tests (SKIP_TESTS=true)"
+          fi
+      - git tag -a {{.VERSION}} -m "Release {{.VERSION}}"
+      - task: build:version
+      - echo ""
+      - echo "Tag {{.VERSION}} created locally. To publish, run:"
+      - echo "    git push origin {{.VERSION}}"

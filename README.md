@@ -113,3 +113,21 @@ Check help output:
 ```sh
 ./git-wth --help
 ```
+
+### Taskfile
+
+A [Taskfile](https://taskfile.dev) is provided with common development steps.
+Run `task --list` to see all tasks. Highlights:
+
+- `task` (default): format, vet, test, and build
+- `task build` / `task build:version`: build the CLI (the latter injects
+  `Version` from `git describe --tags --always --dirty` and a UTC `BuildTime`
+  via `-ldflags`)
+- `task test` / `task test:cover`: run tests, optionally with coverage
+- `task fmt` / `task vet`: format sources / run `go vet`
+- `task help`: build and print `--help`
+- `task clean`: remove the built binary
+- `task release VERSION=vX.Y.Z [SKIP_TESTS=true]`: validate the version
+  (semver `vX.Y.Z`, not already tagged, clean working tree), run tests
+  (unless skipped), create an annotated tag, and build with version info.
+  The tag is **not** pushed automatically.
