@@ -73,6 +73,11 @@ tasks:
     cmds:
       - rm -f {{.BINARY}}
 
+  release:local:
+    desc: Run GoReleaser locally to test the release process (does not publish)
+    cmds:
+      - goreleaser release --snapshot --clean --skip=publish
+
   release:
     desc: 'Tag and build a release. Usage: task release VERSION=v1.2.3 [SKIP_TESTS=true]'
     vars:
