@@ -22,11 +22,11 @@ builds:
     main: .
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     # use zip for windows archives
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
     name_template: >-
       {{ .ProjectName }}_
       {{- .Version }}_
@@ -56,7 +56,7 @@ changelog:
 sboms:
   - artifacts: archive
     documents:
-      - "{{ .ProjectName }}_{{ .Version }}_sbom.spdx.json"
+      - "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}_sbom.spdx.json"
 
 release:
   draft: true

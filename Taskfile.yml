@@ -38,7 +38,7 @@ tasks:
     cmds:
       - >-
         go build
-        -ldflags="-X main.Version={{.VERSION}} -X main.BuildTime={{.BUILD_TIME}}"
+        -ldflags="-s -w -X main.Version={{.VERSION}} -X main.BuildTime={{.BUILD_TIME}}"
         -o {{.BINARY}} .
       - echo "Built {{.BINARY}} version {{.VERSION}} ({{.BUILD_TIME}})"
 
