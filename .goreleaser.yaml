@@ -31,10 +31,8 @@ archives:
     name_template: >-
       {{ .ProjectName }}-
       {{- .Version }}-
-      {{- if eq .Os "Windows" }}win
-      {{- else if eq .Os "Darwin" }}mac
-      {{- else if eq .Os "Linux" }}linux
-      {{- else }}{{ tolower .Os }}{{ end }}-
+      {{- if eq .Os "darwin" }}mac
+      {{- else }}{{ .Os }}{{ end }}-
       {{- if eq .Arch "amd64" }}x64
       {{- else if eq .Arch "386" }}x86
       {{- else }}{{ .Arch }}{{ end }}
@@ -45,10 +43,8 @@ archives:
     wrap_in_directory: >-
       {{ .ProjectName }}-
       {{- .Version }}-
-      {{- if eq .Os "Windows" }}win
-      {{- else if eq .Os "Darwin" }}mac
-      {{- else if eq .Os "Linux" }}linux
-      {{- else }}{{ tolower .Os }}{{ end }}-
+      {{- if eq .Os "darwin" }}mac
+      {{- else }}{{ .Os }}{{ end }}-
       {{- if eq .Arch "amd64" }}x64
       {{- else if eq .Arch "386" }}x86
       {{- else }}{{ .Arch }}{{ end }}
@@ -58,10 +54,8 @@ archives:
     name_template: >-
       {{ .ProjectName }}-
       {{- .Version }}-
-      {{- if eq .Os "Windows" }}win
-      {{- else if eq .Os "Darwin" }}mac
-      {{- else if eq .Os "Linux" }}linux
-      {{- else }}{{ tolower .Os }}{{ end }}-
+      {{- if eq .Os "darwin" }}mac
+      {{- else }}{{ .Os }}{{ end }}-
       {{- if eq .Arch "amd64" }}x64
       {{- else if eq .Arch "386" }}x86
       {{- else }}{{ .Arch }}{{ end }}
@@ -85,7 +79,15 @@ changelog:
 sboms:
   - artifacts: archive
     documents:
-      - "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}_sbom.spdx.json"
+      - >-
+        {{ .ProjectName }}-
+        {{- .Version }}-
+        {{- if eq .Os "darwin" }}mac
+        {{- else }}{{ .Os }}{{ end }}-
+        {{- if eq .Arch "amd64" }}x64
+        {{- else if eq .Arch "386" }}x86
+        {{- else }}{{ .Arch }}{{ end }}
+        {{- if .Arm }}v{{ .Arm }}{{ end }}-sbom.spdx.json
 
 release:
   draft: true
