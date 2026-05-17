@@ -23,21 +23,49 @@ builds:
 
 archives:
   - formats: [tar.gz]
+    id: archive
     # use zip for windows archives
     format_overrides:
       - goos: windows
         formats: [zip]
     name_template: >-
-      {{ .ProjectName }}_
-      {{- .Version }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
+      {{ .ProjectName }}-
+      {{- .Version }}-
+      {{- if eq .Os "Windows" }}win
+      {{- else if eq .Os "Darwin" }}mac
+      {{- else if eq .Os "Linux" }}linux
+      {{- else }}{{ tolower .Os }}{{ end }}-
+      {{- if eq .Arch "amd64" }}x64
+      {{- else if eq .Arch "386" }}x86
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     files:
       - LICENSE*
       - README*
+    wrap_in_directory: >-
+      {{ .ProjectName }}-
+      {{- .Version }}-
+      {{- if eq .Os "Windows" }}win
+      {{- else if eq .Os "Darwin" }}mac
+      {{- else if eq .Os "Linux" }}linux
+      {{- else }}{{ tolower .Os }}{{ end }}-
+      {{- if eq .Arch "amd64" }}x64
+      {{- else if eq .Arch "386" }}x86
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+  - formats: [binary]
+    id: binary
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- .Version }}-
+      {{- if eq .Os "Windows" }}win
+      {{- else if eq .Os "Darwin" }}mac
+      {{- else if eq .Os "Linux" }}linux
+      {{- else }}{{ tolower .Os }}{{ end }}-
+      {{- if eq .Arch "amd64" }}x64
+      {{- else if eq .Arch "386" }}x86
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
 
 checksum:
   name_template: 'checksums.txt'
@@ -47,6 +75,7 @@ snapshot:
   version_template: "{{ incpatch .Version }}-next"
 
 changelog:
+  use: github
   sort: asc
   filters:
     exclude:
@@ -61,4 +90,4 @@ sboms:
 release:
   draft: true
   prerelease: auto
-  name_template: "{{.Tag}}"
+  name_template: "{{.ProjectName}} v{{.Version}}"
